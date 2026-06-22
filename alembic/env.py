@@ -32,6 +32,7 @@ from core.models.auto_reply_rule import AutoReplyRule
 from core.models.api_key import ApiKey
 from core.models.audit_log import AuditLog
 from core.models.template import Template
+from core.models.failed_task import FailedTask
 
 config = context.config
 

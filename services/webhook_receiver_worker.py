@@ -265,7 +265,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     resource_type="WEBHOOK", 
                     metadata={"error": str(e), "payload_summary": str(payload)[:500]}
                 )
-            except: pass
+            except Exception as audit_exc:
+                logger.error(f"[Webhook Receiver] Failed to record ingestion-failure audit event: {audit_exc}")
 
             if new_event:
                 try:

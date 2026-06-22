@@ -7,7 +7,7 @@ import uvicorn
 # Ensure project root is in path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from api.routers import messages_router, templates_router, analytics_router, accounts_router, integration_router, webhooks_router
+from api.routers import messages_router, templates_router, analytics_router, accounts_router, integration_router, webhooks_router, tasks_router
 from api.middleware import rate_limit_middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -35,6 +35,7 @@ app.include_router(analytics_router, prefix="/v1/analytics", tags=["Analytics"])
 app.include_router(accounts_router, prefix="/v1/accounts", tags=["Accounts"])
 app.include_router(integration_router, prefix="/v1/settings", tags=["Settings"])
 app.include_router(webhooks_router, prefix="/webhook", tags=["Webhooks"])
+app.include_router(tasks_router, prefix="/v1/ops/tasks", tags=["Ops"])
 
 @app.get("/health")
 def health_check():

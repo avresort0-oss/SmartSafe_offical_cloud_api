@@ -4,3 +4,4 @@ from .analytics import router as analytics_router
 from .accounts import router as accounts_router
 from .integration import router as integration_router
 from .webhooks import router as webhooks_router
+from .tasks import router as tasks_router

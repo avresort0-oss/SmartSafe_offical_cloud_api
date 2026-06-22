@@ -16,3 +16,4 @@ from .integration import DesktopInstance, InstanceStatus
 from .auto_reply_rule import AutoReplyRule
 from .webhook_event import WebhookEvent
 from .bulk_campaign import BulkCampaign
+from .failed_task import FailedTask
