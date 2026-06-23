@@ -68,6 +68,21 @@ class MessageRepository(BaseRepository[Message]):
         self.session.query(self.model_class).filter(self.model_class.id.in_(message_ids)).delete(synchronize_session=False)
         self.session.commit()
 
+    def list_starred_by_workspace(self, workspace_id: str, limit: int = 200) -> List[Message]:
+        """Fetches starred, non-deleted messages across all conversations in a workspace."""
+        return (
+            self.session.query(self.model_class)
+            .options(joinedload(self.model_class.contact))
+            .filter(
+                self.model_class.workspace_id == workspace_id,
+                self.model_class.is_starred == True,
+                self.model_class.is_deleted == False,
+            )
+            .order_by(self.model_class.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
     def toggle_star(self, message_id: str) -> bool:
         """Toggles the starred status of a message and returns the new state."""
         msg = self.get_by_id(message_id)

@@ -113,3 +113,7 @@ class ContactService:
         normalized = self._normalize_phone(phone)
         entity = self.repository.get_by_phone(workspace_id, normalized)
         return self._to_dto(entity) if entity else None
+
+    def get_contact(self, contact_id: str) -> Optional[ContactDTO]:
+        entity = self.repository.get_by_id(contact_id)
+        return self._to_dto(entity) if entity else None

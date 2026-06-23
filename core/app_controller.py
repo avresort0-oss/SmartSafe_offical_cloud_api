@@ -383,6 +383,18 @@ class AppController:
             attach_label_cb=self.get_attach_conversation_label_cb(),
             detach_label_cb=self.get_detach_conversation_label_cb(),
             create_contract_cb=self.get_create_contract_cb(),
+            archive_conversation_cb=self.handle_archive_conversation,
+            unarchive_conversation_cb=self.handle_unarchive_conversation,
+            pin_conversation_cb=self.handle_pin_conversation,
+            unpin_conversation_cb=self.handle_unpin_conversation,
+            mute_conversation_cb=self.handle_mute_conversation,
+            unmute_conversation_cb=self.handle_unmute_conversation,
+            delete_conversation_cb=self.handle_delete_conversation,
+            load_contacts_cb=self.get_load_contacts_cb(),
+            start_conversation_cb=self.handle_start_conversation,
+            get_contact_for_conversation_cb=self.get_contact_for_conversation_cb(),
+            load_starred_messages_cb=self.get_load_starred_messages_cb(),
+            mark_read_conversation_cb=self.handle_mark_read_conversation,
         )
 
     def handle_conversation_select(self, conversation_id: str):
@@ -390,6 +402,33 @@ class AppController:
             return None
         self.conversation_service.mark_read(conversation_id)
         return self.conversation_service.get_conversation(conversation_id)
+
+    def handle_start_conversation(self, contact_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            ws = app_state_manager.get_current_workspace()
+            if not ws:
+                raise ValueError("No workspace selected.")
+            return self.conversation_service.get_or_create_conversation(ws.id, contact_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def get_load_starred_messages_cb(self) -> Callable:
+        def _load():
+            ws = app_state_manager.get_current_workspace()
+            if not ws:
+                return []
+            return self.message_service.list_starred(ws.id)
+
+        return _load
+
+    def get_contact_for_conversation_cb(self) -> Callable:
+        def _get(conversation_id: str):
+            conv = self.conversation_service.get_conversation(conversation_id)
+            if not conv:
+                return None
+            return self.contact_service.get_contact(conv.contact_id)
+
+        return _get
 
     def _current_workspace_is_admin(self) -> bool:
         ws = app_state_manager.get_current_workspace()
@@ -422,7 +461,62 @@ class AppController:
         def _worker():
             self._ensure_conversation_permission(conversation_id)
             return self.conversation_service.update_status(conversation_id, status)
-        
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_archive_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.archive_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_unarchive_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.unarchive_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_pin_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.pin_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_unpin_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.unpin_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_mute_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.mute_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_unmute_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.unmute_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_delete_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            self._ensure_conversation_permission(conversation_id)
+            return self.conversation_service.delete_conversation(conversation_id)
+
+        self._run_async(_worker, callback=callback)
+
+    def handle_mark_read_conversation(self, conversation_id: str, callback: Optional[Callable] = None):
+        def _worker():
+            return self.conversation_service.mark_read(conversation_id)
+
         self._run_async(_worker, callback=callback)
 
     def handle_contacts_select(self):
@@ -635,6 +729,7 @@ class AppController:
             label_query: Optional[str] = None,
             unread_only: bool = False,
             meta_account_id: Optional[str] = None,
+            archived: bool = False,
         ):
             ws = app_state_manager.get_current_workspace()
             if not ws:
@@ -647,6 +742,7 @@ class AppController:
                 label_query=label_query,
                 unread_only=unread_only,
                 meta_account_id=meta_account_id,
+                archived=archived,
             )
 
         return _load

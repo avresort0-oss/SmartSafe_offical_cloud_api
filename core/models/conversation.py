@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from core.database import Base
@@ -22,6 +22,10 @@ class Conversation(AuditMixin, Base):
     last_message_at = Column(DateTime, nullable=True, index=True)
     last_message_preview = Column(String(255), nullable=True, default="")
     unread_count = Column(Integer, nullable=False, default=0)
+    is_archived = Column(Boolean, nullable=False, default=False, index=True)
+    is_pinned = Column(Boolean, nullable=False, default=False, index=True)
+    is_muted = Column(Boolean, nullable=False, default=False)
+    is_deleted = Column(Boolean, nullable=False, default=False, index=True)
 
     workspace = relationship("Workspace")
     contact = relationship("Contact", back_populates="conversations")

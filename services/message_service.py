@@ -40,6 +40,15 @@ class MessageCreateDTO:
 
 
 @dataclass
+class StarredMessageDTO:
+    id: str
+    conversation_id: Optional[str]
+    contact_name: str
+    text: str
+    created_at: str
+
+
+@dataclass
 class MessageResponseDTO:
     id: str
     content: str
@@ -194,6 +203,21 @@ class MessageService:
                 if query_lower in plain_text.lower():
                     results.append(self._to_response(m, content_override=plain_text))
             return results
+
+    def list_starred(self, workspace_id: str) -> List[StarredMessageDTO]:
+        with SessionLocal() as session:
+            repo = MessageRepository(session)
+            msgs = repo.list_starred_by_workspace(workspace_id)
+            return [
+                StarredMessageDTO(
+                    id=m.id,
+                    conversation_id=m.conversation_id,
+                    contact_name=m.contact.display_name if m.contact else "Unknown",
+                    text=self._decrypt(m.content),
+                    created_at=m.created_at.isoformat() if m.created_at else "",
+                )
+                for m in msgs
+            ]
 
     def delete_message(self, message_id: str) -> bool:
         with SessionLocal() as session:

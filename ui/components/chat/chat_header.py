@@ -16,12 +16,14 @@ class ChatHeader(ctk.CTkFrame):
         master,
         on_add_label_click: Optional[Callable[[], None]] = None,
         on_remove_label: Optional[Callable[[str], None]] = None,
+        on_search_click: Optional[Callable[[], None]] = None,
         **kwargs,
     ):
         super().__init__(master, fg_color=HEADER_FOOTER_COLOR, corner_radius=0, height=62, **kwargs)
         self.grid_propagate(False)
         self.on_add_label_click = on_add_label_click
         self.on_remove_label = on_remove_label
+        self.on_search_click = on_search_click
 
         # Profile Circle
         self.avatar_label = ctk.CTkLabel(
@@ -78,7 +80,7 @@ class ChatHeader(ctk.CTkFrame):
         self.more_btn = ctk.CTkButton(self, text="⋮", width=36, height=36, fg_color="transparent", hover_color=HOVER_COLOR, font=get_font(size=20), corner_radius=18)
         self.more_btn.pack(side="right", padx=(5, 15))
 
-        self.search_btn = ctk.CTkButton(self, text="🔍", width=36, height=36, fg_color="transparent", hover_color=HOVER_COLOR, font=get_font(size=17), corner_radius=18)
+        self.search_btn = ctk.CTkButton(self, text="🔍", width=36, height=36, fg_color="transparent", hover_color=HOVER_COLOR, font=get_font(size=17), corner_radius=18, command=self.on_search_click)
         self.search_btn.pack(side="right", padx=5)
 
     def set_conversation(self, title: str, status_text: str, has_conversation: bool) -> None:

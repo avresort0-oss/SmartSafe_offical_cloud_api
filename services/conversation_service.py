@@ -23,6 +23,9 @@ class ConversationDTO:
     contact_name: str
     contact_phone: str
     labels: List[str] = field(default_factory=list)
+    is_archived: bool = False
+    is_pinned: bool = False
+    is_muted: bool = False
 
 
 @dataclass
@@ -36,6 +39,9 @@ class ConversationListItemDTO:
     status: str
     assigned_user_id: Optional[str]
     labels: List[str] = field(default_factory=list)
+    is_archived: bool = False
+    is_pinned: bool = False
+    is_muted: bool = False
 
 
 class ConversationService:
@@ -64,6 +70,9 @@ class ConversationService:
             contact_name=conv.contact.display_name if conv.contact else "Unknown",
             contact_phone=conv.contact.phone_e164 if conv.contact else "",
             labels=self._collect_labels(conv),
+            is_archived=bool(conv.is_archived),
+            is_pinned=bool(conv.is_pinned),
+            is_muted=bool(conv.is_muted),
         )
 
     def list_conversations(
@@ -75,6 +84,7 @@ class ConversationService:
         label_query: Optional[str] = None,
         unread_only: bool = False,
         meta_account_id: Optional[str] = None,
+        archived: bool = False,
         limit: int = 200,
         offset: int = 0,
     ) -> List[ConversationListItemDTO]:
@@ -86,6 +96,7 @@ class ConversationService:
             label_query=label_query,
             unread_only=unread_only,
             meta_account_id=meta_account_id,
+            archived=archived,
             limit=limit,
             offset=offset,
         )
@@ -102,6 +113,9 @@ class ConversationService:
                     status=conv.status,
                     assigned_user_id=conv.assigned_user_id,
                     labels=self._collect_labels(conv),
+                    is_archived=bool(conv.is_archived),
+                    is_pinned=bool(conv.is_pinned),
+                    is_muted=bool(conv.is_muted),
                 )
             )
         return items
@@ -134,6 +148,45 @@ class ConversationService:
 
     def mark_read(self, conversation_id: str) -> bool:
         return self.repository.mark_read(conversation_id)
+
+    def archive_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_archived(conversation_id, True):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def unarchive_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_archived(conversation_id, False):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def pin_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_pinned(conversation_id, True):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def unpin_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_pinned(conversation_id, False):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def mute_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_muted(conversation_id, True):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def unmute_conversation(self, conversation_id: str) -> Optional[ConversationDTO]:
+        if not self.repository.set_muted(conversation_id, False):
+            return None
+        conv = self.repository.get_by_id(conversation_id)
+        return self._to_dto(conv) if conv else None
+
+    def delete_conversation(self, conversation_id: str) -> bool:
+        return self.repository.set_deleted(conversation_id, True)
 
     def update_on_new_message(self, conversation_id: str, preview: str, message_ts: datetime, inbound: bool) -> Optional[ConversationDTO]:
         conv = self.repository.touch_with_message(

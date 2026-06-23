@@ -263,6 +263,18 @@ class SmartSafeApp(ctk.CTk):
         attach_label_cb=None,
         detach_label_cb=None,
         create_contract_cb=None,
+        archive_conversation_cb=None,
+        unarchive_conversation_cb=None,
+        pin_conversation_cb=None,
+        unpin_conversation_cb=None,
+        mute_conversation_cb=None,
+        unmute_conversation_cb=None,
+        delete_conversation_cb=None,
+        load_contacts_cb=None,
+        start_conversation_cb=None,
+        get_contact_for_conversation_cb=None,
+        load_starred_messages_cb=None,
+        mark_read_conversation_cb=None,
     ):
         self._hide_all_main_content_frames()
         if not self.inbox_frame:
@@ -285,6 +297,18 @@ class SmartSafeApp(ctk.CTk):
                 attach_label_cb=attach_label_cb,
                 detach_label_cb=detach_label_cb,
                 create_contract_cb=create_contract_cb,
+                archive_conversation_cb=archive_conversation_cb,
+                unarchive_conversation_cb=unarchive_conversation_cb,
+                pin_conversation_cb=pin_conversation_cb,
+                unpin_conversation_cb=unpin_conversation_cb,
+                mute_conversation_cb=mute_conversation_cb,
+                unmute_conversation_cb=unmute_conversation_cb,
+                delete_conversation_cb=delete_conversation_cb,
+                load_contacts_cb=load_contacts_cb,
+                start_conversation_cb=start_conversation_cb,
+                get_contact_for_conversation_cb=get_contact_for_conversation_cb,
+                load_starred_messages_cb=load_starred_messages_cb,
+                mark_read_conversation_cb=mark_read_conversation_cb,
             )
         else:
             self.inbox_frame.load_conversations_cb = load_conversations_cb
@@ -301,6 +325,18 @@ class SmartSafeApp(ctk.CTk):
             self.inbox_frame.attach_label_cb = attach_label_cb
             self.inbox_frame.detach_label_cb = detach_label_cb
             self.inbox_frame.create_contract_cb = create_contract_cb
+            self.inbox_frame.archive_conversation_cb = archive_conversation_cb
+            self.inbox_frame.unarchive_conversation_cb = unarchive_conversation_cb
+            self.inbox_frame.pin_conversation_cb = pin_conversation_cb
+            self.inbox_frame.unpin_conversation_cb = unpin_conversation_cb
+            self.inbox_frame.mute_conversation_cb = mute_conversation_cb
+            self.inbox_frame.unmute_conversation_cb = unmute_conversation_cb
+            self.inbox_frame.delete_conversation_cb = delete_conversation_cb
+            self.inbox_frame.load_contacts_cb = load_contacts_cb
+            self.inbox_frame.start_conversation_cb = start_conversation_cb
+            self.inbox_frame.get_contact_for_conversation_cb = get_contact_for_conversation_cb
+            self.inbox_frame.load_starred_messages_cb = load_starred_messages_cb
+            self.inbox_frame.mark_read_conversation_cb = mark_read_conversation_cb
 
         if self.inbox_frame:
             self.inbox_frame.grid(row=0, column=1, sticky="nsew")

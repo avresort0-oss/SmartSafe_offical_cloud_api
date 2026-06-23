@@ -80,6 +80,7 @@ class ChatFrame(ctk.CTkFrame):
         
         self._build_header()
         self._build_message_list()
+        self._build_search_bar()
         self._build_reply_banner()
         self._build_quick_replies_banner()
         self._build_suggest_menu()
@@ -96,6 +97,7 @@ class ChatFrame(ctk.CTkFrame):
             self,
             on_add_label_click=self._on_add_label_click,
             on_remove_label=self._on_remove_label,
+            on_search_click=self._toggle_message_search,
         )
         self.chat_header.grid(row=0, column=0, sticky="ew")
 
@@ -107,6 +109,75 @@ class ChatFrame(ctk.CTkFrame):
             on_attachment_open=self._open_attachment,
         )
         self.message_list.grid(row=1, column=0, sticky="nsew")
+
+    def _build_search_bar(self):
+        """Floating search bar overlaid on top of the message timeline (placed via
+        `place(in_=...)` so the existing 6-row grid never needs renumbering)."""
+        self.search_bar = ctk.CTkFrame(self, fg_color=HEADER_FOOTER_COLOR, corner_radius=8, height=40)
+        self.search_bar.grid_propagate(False)
+
+        self.search_entry = ctk.CTkEntry(
+            self.search_bar, placeholder_text="Search in this chat…",
+            fg_color=INPUT_COLOR, border_width=0,
+            text_color=TEXT_COLOR, placeholder_text_color=SUB_TEXT_COLOR,
+            corner_radius=8, height=30, font=get_font(size=12)
+        )
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(8, 4), pady=5)
+        self.search_entry.bind("<KeyRelease>", lambda _e: self._on_search_query_change())
+        self.search_entry.bind("<Return>", lambda _e: self._search_nav(1))
+
+        self.search_count_label = ctk.CTkLabel(self.search_bar, text="", font=get_font(size=11), text_color=SUB_TEXT_COLOR, width=40)
+        self.search_count_label.pack(side="left", padx=2)
+
+        prev_btn = ctk.CTkButton(self.search_bar, text="▲", width=26, height=26, fg_color="transparent", hover_color=HOVER_COLOR, text_color=TEXT_COLOR, font=get_font(size=11), command=lambda: self._search_nav(-1))
+        prev_btn.pack(side="left", padx=2)
+        next_btn = ctk.CTkButton(self.search_bar, text="▼", width=26, height=26, fg_color="transparent", hover_color=HOVER_COLOR, text_color=TEXT_COLOR, font=get_font(size=11), command=lambda: self._search_nav(1))
+        next_btn.pack(side="left", padx=2)
+        close_btn = ctk.CTkButton(self.search_bar, text="✕", width=26, height=26, fg_color="transparent", hover_color=HOVER_COLOR, text_color=SUB_TEXT_COLOR, font=get_font(size=11), command=self._close_message_search)
+        close_btn.pack(side="left", padx=(2, 8))
+
+        self._search_matches: List[str] = []
+        self._search_index: int = -1
+        self._search_visible = False
+
+    def _toggle_message_search(self):
+        if self._search_visible:
+            self._close_message_search()
+        else:
+            self._search_visible = True
+            self.search_bar.place(in_=self.message_list, relx=0.5, rely=0.02, anchor="n", relwidth=0.92)
+            self.search_entry.focus_set()
+
+    def _close_message_search(self):
+        self._search_visible = False
+        self.search_bar.place_forget()
+        self.search_entry.delete(0, "end")
+        self._search_matches = []
+        self._search_index = -1
+        self.message_list.clear_highlight()
+
+    def _on_search_query_change(self):
+        query = self.search_entry.get()
+        self._search_matches = self.message_list.find_matches(query)
+        if self._search_matches:
+            self._search_index = len(self._search_matches) - 1
+            self._jump_to_search_index()
+        else:
+            self._search_index = -1
+            self.search_count_label.configure(text="0/0" if query.strip() else "")
+            self.message_list.clear_highlight()
+
+    def _search_nav(self, direction: int):
+        if not self._search_matches:
+            return
+        self._search_index = (self._search_index + direction) % len(self._search_matches)
+        self._jump_to_search_index()
+
+    def _jump_to_search_index(self):
+        msg_id = self._search_matches[self._search_index]
+        self.message_list.scroll_to(msg_id)
+        self.message_list.highlight_message(msg_id)
+        self.search_count_label.configure(text=f"{self._search_index + 1}/{len(self._search_matches)}")
 
     def _build_reply_banner(self):
         self.reply_banner = ctk.CTkFrame(self, fg_color=INPUT_COLOR, corner_radius=0, height=40)
@@ -274,7 +345,7 @@ class ChatFrame(ctk.CTkFrame):
         )
         self.chat_input.grid(row=5, column=0, sticky="ew")
 
-    def add_message(self, text: str, is_sent: bool = True, timestamp: str = "12:00 PM", msg_id: Optional[str] = None, is_synced: bool = False, parent_id: Optional[str] = None, sender_name: str = "Unknown", attachment_path: Optional[str] = None, is_starred: bool = False):
+    def add_message(self, text: str, is_sent: bool = True, timestamp: str = "12:00 PM", msg_id: Optional[str] = None, status: str = "PENDING", parent_id: Optional[str] = None, sender_name: str = "Unknown", attachment_path: Optional[str] = None, is_starred: bool = False):
         """
         Dynamically injects a new message bubble into the timeline.
         Respects layout alignment (Sent = Right, Received = Left).
@@ -284,7 +355,7 @@ class ChatFrame(ctk.CTkFrame):
             is_sent=is_sent,
             timestamp=timestamp,
             msg_id=msg_id,
-            is_synced=is_synced,
+            status=status,
             parent_id=parent_id,
             sender_name=sender_name,
             attachment_path=attachment_path,
@@ -298,7 +369,7 @@ class ChatFrame(ctk.CTkFrame):
             is_sent=is_sent,
             timestamp=msg_dto.timestamp,
             msg_id=msg_dto.id,
-            is_synced=msg_dto.is_synced,
+            status=msg_dto.status,
             parent_id=msg_dto.parent_id,
             sender_name=msg_dto.sender_name,
             attachment_path=msg_dto.attachment_path,
@@ -367,7 +438,7 @@ class ChatFrame(ctk.CTkFrame):
                 is_sent = bool(self.current_user is not None and msg.sender_id == self.current_user.id)
                 self.add_message_from_dto(msg, is_sent)
             else:
-                self.message_list.update_message_status(msg.id, is_synced=msg.is_synced, is_starred=msg.is_starred)
+                self.message_list.update_message_status(msg.id, status=msg.status, is_starred=msg.is_starred)
         
     def _initiate_reply(self, msg_id: str, text: str):
         self.replying_to_msg_id = msg_id
@@ -476,6 +547,8 @@ class ChatFrame(ctk.CTkFrame):
         self._load_history()
 
     def set_conversation(self, conversation_id: Optional[str], title: str, status_text: str = "online", last_message_at: str = "", labels: Optional[List[Any]] = None):
+        if conversation_id != self.active_conversation_id and self._search_visible:
+            self._close_message_search()
         self.active_conversation_id = conversation_id
         self.chat_header.set_conversation(title, status_text, has_conversation=bool(conversation_id))
 

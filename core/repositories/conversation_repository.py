@@ -22,6 +22,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         label_query: Optional[str] = None,
         unread_only: bool = False,
         meta_account_id: Optional[str] = None,
+        archived: bool = False,
         limit: int = 200,
         offset: int = 0,
     ) -> List[Conversation]:
@@ -33,6 +34,8 @@ class ConversationRepository(BaseRepository[Conversation]):
                 selectinload(self.model_class.labels),
             )
             .filter(self.model_class.workspace_id == workspace_id)
+            .filter(self.model_class.is_archived == archived)
+            .filter(self.model_class.is_deleted == False)
         )
         if status:
             query = query.filter(self.model_class.status == status)
@@ -58,7 +61,13 @@ class ConversationRepository(BaseRepository[Conversation]):
                     Contact.phone_e164.ilike(f"%{search}%"),
                 )
             )
-        return query.order_by(self.model_class.updated_at.desc()).distinct().limit(limit).offset(offset).all()
+        return (
+            query.order_by(self.model_class.is_pinned.desc(), self.model_class.updated_at.desc())
+            .distinct()
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
 
     def get_by_workspace_and_contact(self, workspace_id: str, contact_id: str, meta_account_id: Optional[str] = None) -> Optional[Conversation]:
         query = self.session.query(self.model_class).filter(
@@ -105,5 +114,37 @@ class ConversationRepository(BaseRepository[Conversation]):
         if not conversation:
             return False
         conversation.unread_count = 0
+        self.session.commit()
+        return True
+
+    def set_archived(self, conversation_id: str, archived: bool) -> bool:
+        conversation = self.get_by_id(conversation_id)
+        if not conversation:
+            return False
+        conversation.is_archived = archived
+        self.session.commit()
+        return True
+
+    def set_pinned(self, conversation_id: str, pinned: bool) -> bool:
+        conversation = self.get_by_id(conversation_id)
+        if not conversation:
+            return False
+        conversation.is_pinned = pinned
+        self.session.commit()
+        return True
+
+    def set_muted(self, conversation_id: str, muted: bool) -> bool:
+        conversation = self.get_by_id(conversation_id)
+        if not conversation:
+            return False
+        conversation.is_muted = muted
+        self.session.commit()
+        return True
+
+    def set_deleted(self, conversation_id: str, deleted: bool) -> bool:
+        conversation = self.get_by_id(conversation_id)
+        if not conversation:
+            return False
+        conversation.is_deleted = deleted
         self.session.commit()
         return True
